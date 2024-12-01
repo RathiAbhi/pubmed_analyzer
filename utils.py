@@ -6,7 +6,7 @@ import logging
 import time
 
 # Set your OpenAI API key here
-openai.api_key = "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"
+openai.api_key = "YOUR_API_KEY"
 
 # Download the paper from PubMed
 def download_paper(url, save_path):
