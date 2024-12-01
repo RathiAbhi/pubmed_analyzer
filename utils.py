@@ -3,40 +3,71 @@ import pdfplumber
 import openai
 import pandas as pd
 import logging
+from bs4 import BeautifulSoup
 import time
+import json
 
-# Set your OpenAI API key here
-openai.api_key = "YOUR_API_KEY"
+# Set your OpenAI API key
+openai.api_key = "YOUR_KEY"
 
-# Download the paper from PubMed
+
+# Function to get the full-text PDF URL from PubMed
+def get_full_text_pdf_url(pubmed_url):
+    try:
+        response = requests.get(pubmed_url)
+        if response.status_code != 200:
+            logging.error(f"Failed to fetch PubMed page: {pubmed_url}")
+            return None
+
+        soup = BeautifulSoup(response.content, 'html.parser')
+        # Locate the "Full Text Sources" links
+        full_text_section = soup.find('div', class_='full-text-links-list')
+        if not full_text_section:
+            logging.error(f"No full-text section found for {pubmed_url}")
+            return None
+
+        # Get the first external full-text link (or customize if needed)
+        link = full_text_section.find('a', href=True)
+        if link:
+            full_text_url = link['href']
+            logging.info(f"Found full-text link: {full_text_url}")
+            return full_text_url
+        else:
+            logging.error(f"No external full-text link found in {pubmed_url}")
+            return None
+    except Exception as e:
+        logging.error(f"Error scraping PubMed page: {e}")
+        return None
+
+
+# Download the paper from the full-text link
 def download_paper(url, save_path):
+    full_text_url = get_full_text_pdf_url(url)
+    if not full_text_url:
+        logging.error(f"Unable to find full-text PDF for: {url}")
+        return False
+
     retries = 3
     for attempt in range(retries):
         try:
-            response = requests.get(url, stream=True, timeout=10)
-
-            # Check if we received the expected response type (PDF)
-            if response.status_code == 200:
-                # Check if the file is a PDF (based on the Content-Type header)
-                if 'application/pdf' in response.headers.get('Content-Type', ''):
-                    with open(save_path, 'wb') as f:
-                        for chunk in response.iter_content(chunk_size=1024):
-                            if chunk:
-                                f.write(chunk)
-                    logging.info(f"Downloaded: {save_path}")
-                    return True
-                else:
-                    logging.error(f"URL does not return a PDF: {url}")
-                    break
+            response = requests.get(full_text_url, stream=True, timeout=10)
+            if response.status_code == 200 and 'application/pdf' in response.headers.get('Content-Type', ''):
+                with open(save_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=1024):
+                        if chunk:
+                            f.write(chunk)
+                logging.info(f"Downloaded PDF to {save_path}")
+                return True
             elif response.status_code == 429:
                 logging.warning(f"Rate limited. Retrying... ({attempt + 1}/{retries})")
-                time.sleep(5 * (attempt + 1))  # Exponential backoff
+                time.sleep(5 * (attempt + 1))
             else:
-                logging.error(f"Failed to download {url}, status code: {response.status_code}")
-                break
+                logging.error(f"Failed to download PDF, status code: {response.status_code}")
+                return False
         except requests.RequestException as e:
-            logging.error(f"Error downloading {url}: {e}")
+            logging.error(f"Error downloading PDF: {e}")
     return False
+
 
 # Extract text from a PDF
 def extract_text_from_pdf(pdf_path):
@@ -52,6 +83,7 @@ def extract_text_from_pdf(pdf_path):
     except Exception as e:
         logging.error(f"Error extracting text from {pdf_path}: {e}")
     return text
+
 
 # Summarize the paper using OpenAI API
 def summarize_paper(text):
@@ -74,29 +106,12 @@ def summarize_paper(text):
         logging.error(f"Error with OpenAI API: {e}")
         return "Error generating summary."
 
-# Extract main results table from the PDF
-def extract_main_table(pdf_path, output_csv_path):
-    try:
-        with pdfplumber.open(pdf_path) as pdf:
-            for page in pdf.pages:
-                tables = page.extract_tables()
-                if tables:
-                    main_table = max(tables, key=len)  # Get the table with most rows
-                    df = pd.DataFrame(main_table)
-                    df.to_csv(output_csv_path, index=False)
-                    logging.info(f"Table extracted and saved to {output_csv_path}")
-                    return True
-        logging.warning(f"No tables found in {pdf_path}")
-    except Exception as e:
-        logging.error(f"Error extracting table from {pdf_path}: {e}")
-    return False
 
 # Save the summary to a file
-def save_summary(paper_id, summary):
+def save_summary(summary, summary_path):
     try:
-        summary_file = f"summaries/{paper_id}_summary.txt"
-        with open(summary_file, 'w') as f:
+        with open(summary_path, 'w') as f:
             f.write(summary)
-        logging.info(f"Summary saved for {paper_id}.")
+        logging.info(f"Summary saved to {summary_path}.")
     except Exception as e:
-        logging.error(f"Error saving summary for {paper_id}: {e}")
+        logging.error(f"Error saving summary: {e}")
