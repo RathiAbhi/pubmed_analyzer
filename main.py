@@ -1,43 +1,72 @@
 import os
 import logging
-from concurrent.futures import ThreadPoolExecutor
+import time
 from utils import download_paper, extract_text_from_pdf, summarize_paper, save_summary, extract_main_table
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def load_urls(file_path='paper_urls.txt'):
-    """Load PubMed URLs from the given file."""
-    try:
-        with open(file_path, 'r') as f:
-            urls = [line.strip() for line in f if line.strip()]
-        logging.info(f"Loaded {len(urls)} URLs from {file_path}")
-        return urls
-    except FileNotFoundError:
-        logging.error(f"File {file_path} not found.")
-        return []
+# Directory to store downloaded PDFs
+PAPER_DIRECTORY = 'papers'
+SUMMARY_DIRECTORY = 'summaries'
+TABLES_DIRECTORY = 'tables'
 
-def process_paper(url):
-    """Download, summarize, and extract data from a single paper."""
-    try:
-        pdf_path = download_paper(url)
-        if pdf_path:
-            text = extract_text_from_pdf(pdf_path)
-            if text:
-                summary = summarize_paper(text)
-                save_summary(summary, pdf_path)
-                extract_main_table(pdf_path)
-    except Exception as e:
-        logging.error(f"Error processing paper {url}: {e}")
 
+# Function to read the list of PubMed URLs from a file
+def read_paper_urls(file_path):
+    with open(file_path, 'r') as file:
+        urls = file.readlines()
+    return [url.strip() for url in urls]
+
+
+# Main function to download, summarize and extract tables
 def main():
-    urls = load_urls()
-    if urls:
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            executor.map(process_paper, urls)
-        logging.info("Completed processing all papers.")
-    else:
-        logging.warning("No URLs to process.")
+    logging.info("Starting PubMed Paper Analyzer...")
+
+    # Create necessary directories if they don't exist
+    os.makedirs(PAPER_DIRECTORY, exist_ok=True)
+    os.makedirs(SUMMARY_DIRECTORY, exist_ok=True)
+    os.makedirs(TABLES_DIRECTORY, exist_ok=True)
+
+    # Read the URLs from the file
+    paper_urls = read_paper_urls('paper_urls.txt')
+
+    # Iterate through each URL
+    for url in paper_urls:
+        paper_id = url.split('/')[-1].split('?')[0]  # Extract the paper ID from the URL
+        pdf_path = os.path.join(PAPER_DIRECTORY, f"{paper_id}.pdf")
+
+        # Download the PDF
+        if download_paper(url, pdf_path):
+            logging.info(f"Processing paper: {paper_id}")
+
+            # Extract text from the PDF
+            try:
+                text = extract_text_from_pdf(pdf_path)
+                if text:
+                    # Summarize the paper
+                    summary = summarize_paper(text)
+                    summary_path = os.path.join(SUMMARY_DIRECTORY, f"{paper_id}_summary.txt")
+                    save_summary(summary, summary_path)
+
+                    # Extract the main table
+                    table = extract_main_table(pdf_path)
+                    if table:
+                        table_path = os.path.join(TABLES_DIRECTORY, f"{paper_id}_table.json")
+                        with open(table_path, 'w') as table_file:
+                            json.dump(table, table_file)
+                        logging.info(f"Table extracted for {paper_id}")
+                    else:
+                        logging.warning(f"No table found in {paper_id}")
+                else:
+                    logging.error(f"Failed to extract text from {paper_id}. Skipping.")
+            except Exception as e:
+                logging.error(f"Error processing {paper_id}: {e}")
+        else:
+            logging.error(f"Failed to download or process {paper_id}")
+
+    logging.info("All tasks completed.")
+
 
 if __name__ == '__main__':
     main()
