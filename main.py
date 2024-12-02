@@ -1,53 +1,80 @@
-import os
 import logging
-from utils import download_paper, extract_text_from_pdf, summarize_paper, save_summary
+import os
+import re
+from utils import (
+    get_abstract_and_full_text_links,
+    download_or_extract_content,
+    extract_text_from_pdf,
+    extract_results_section,
+    summarize_content,
+    save_summary_and_results
+)
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Directory to store downloaded PDFs
-PAPER_DIRECTORY = 'papers'
-SUMMARY_DIRECTORY = 'summaries'
+def extract_pubmed_id(pubmed_url):
+    """Extract the PubMed ID from the given PubMed URL."""
+    match = re.search(r"(\d+)$", pubmed_url)  # Match the number at the end of the URL
+    if match:
+        return match.group(1)
+    return None
 
-# Function to read the list of PubMed URLs from a file
-def read_paper_urls(file_path):
-    with open(file_path, 'r') as file:
-        urls = file.readlines()
-    return [url.strip() for url in urls]
+def main(pubmed_url, paper_id):
+    """Main function to process a PubMed URL."""
+    logging.info(f"Processing PubMed URL: {pubmed_url}")
 
-# Main function to download, summarize, and extract tables
-def main():
-    logging.info("Starting PubMed Paper Analyzer...")
+    # Extract PubMed ID from URL for naming files
+    pubmed_id = extract_pubmed_id(pubmed_url)
+    if not pubmed_id:
+        logging.error(f"Failed to extract PubMed ID from URL: {pubmed_url}")
+        return
 
-    # Create necessary directories if they don't exist
-    os.makedirs(PAPER_DIRECTORY, exist_ok=True)
-    os.makedirs(SUMMARY_DIRECTORY, exist_ok=True)
+    # Create directories for saving outputs
+    os.makedirs("summaries", exist_ok=True)
+    os.makedirs("papers", exist_ok=True)
+    os.makedirs("tables", exist_ok=True)
 
-    # Read the URLs from the file
-    paper_urls = read_paper_urls('paper_urls.txt')
+    # Step 1: Get abstract and full-text links
+    abstract, full_text_links = get_abstract_and_full_text_links(pubmed_url)
+    if not abstract:
+        logging.error("Failed to extract abstract.")
+    else:
+        logging.info("Abstract extracted successfully.")
 
-    # Iterate through each URL
-    for url in paper_urls:
-        paper_id = url.split('/')[-2]  # Extract the paper ID from the URL
-        pdf_path = os.path.join(PAPER_DIRECTORY, f"{paper_id}.pdf")
+    # Step 2: Attempt to download PDF or extract content
+    pdf_save_path = f"papers/{pubmed_id}.pdf"
+    pdf_downloaded = download_or_extract_content(full_text_links, pdf_save_path, pubmed_id)
 
-        # Download the PDF
-        if download_paper(url, pdf_path):
-            logging.info(f"Processing paper: {paper_id}")
+    if pdf_downloaded:
+        logging.info("PDF downloaded successfully.")
+        # Step 3: Extract text from the downloaded PDF
+        extracted_text = extract_text_from_pdf(pdf_save_path)
+    else:
+        logging.info("No PDF found. Using extracted article content.")
+        extracted_text = None
 
-            # Extract text from the PDF
-            text = extract_text_from_pdf(pdf_path)
-            if text:
-                # Summarize the paper
-                summary = summarize_paper(text)
-                summary_path = os.path.join(SUMMARY_DIRECTORY, f"{paper_id}_summary.txt")
-                save_summary(summary, summary_path)
-            else:
-                logging.error(f"Failed to extract text from {paper_id}. Skipping.")
-        else:
-            logging.error(f"Failed to download or process {paper_id}")
+    # Step 4: Summarize content
+    if extracted_text:
+        summary = summarize_content(extracted_text)
+    else:
+        logging.warning("No text extracted from PDF.")
+        summary = summarize_content(abstract)
 
-    logging.info("All tasks completed.")
+    # Step 5: Extract the results section from the text
+    results = None
+    if extracted_text:
+        results = extract_results_section(extracted_text)
 
-if __name__ == '__main__':
-    main()
+    # Step 6: Save summary and results
+    save_summary_and_results(summary, results, pubmed_id)
+
+if __name__ == "__main__":
+    if not os.path.isfile("paper_urls.txt"):
+        logging.error("The file 'paper_urls.txt' does not exist. Please create it and add URLs.")
+    else:
+        with open("paper_urls.txt", "r") as file:
+            urls = [line.strip() for line in file if line.strip()]
+
+        for url in urls:
+            main(url, None)

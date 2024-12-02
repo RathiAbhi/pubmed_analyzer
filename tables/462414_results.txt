@@ -1,0 +1,45 @@
+Results were analyzed with the Izon control suite v3.4 
+digested  with  collagenase  type  II  (Sigma-Aldrich, 
+software  that  allows  us  to  make  a  comparison 
+Saint  Louis,  MO,  USA)  in  Hanks’  balanced  salts 
+between  the  sample  and  CPC200  as  comparative 
+solution  (HBSS)  with  calcium  and  magnesium 
+reference.  
+(Euroclone, Milan, Italy) at room temperature (RT) for 
+three  hours  with  shaking.  The  resulted  cells  were  2.5 fADSCs-derived exosome markers 
+cultured  in  DMEM  Dulbecco′s  Modified  Eagle′s 
+We  analyzed  small  extracellular  vesicle  (sEV) 
+Medium high glucose (Sigma-Aldrich, Saint Louis, 
+markers  using  the  Exo-Check™  exosome  antibody 
+MO, USA) added with 2% of Anti/Anti and 10% Fetal 
+array  (Systems  Biosciences,  USA) according to the 
+Bovine  Serum  (FBS)  (Thermo  Fisher  Scientific, 
+manufacturer's instructions. The markers tested were 
+Waltham,  Massachusetts,  USA)  inside  incubator at 
+ALIX, FLOT1, ANXA5, and TSG101, along with two 
+37°C with 5% of CO2. Cellular growth was monitored 
+HRP detection controls, a blank spot, and the GM130 
+using  Evos  XL  Core  microscope  (Invitrogen, 
+cis-Golgi  marker  for  cellular  contamination. 
+Waltham, Massachusetts, USA). 
+Experiments  were  conducted  in  triplicate.  The 
+2.2 fADSCS-derived exosomes isolation   antibody used are set up for human used since no 
+antibody specific of feline exosomes are present in the 
+fADSCs were cultured in a medium composed 
+market. 
+by DMEM Dulbecco′s Modified Eagle′s Medium high 
+glucose  (Sigma-Aldrich,  St.  Louis,  Missouri,  USA)  2.6 Total exosomes RNA extraction, miRNA 
+supplemented  with  1%  Antibiotic  Antimycotic  sequencing and feline-miRNAs comparison 
+Solution  100×  (Sigma-Aldrich,  St.  Louis,  Missouri,  with human-miRNAs homologous 
+USA) and 10% exosome-depleted Fetal Bovine Serum 
+Total RNA extraction from the fADSC-derived 
+(Thermo Fisher Scientific, Waltham, Massachusetts, 
+exosomes  was  performed  using  the  Cell  Culture 
+USA) to avoid the presence of serum lipoproteins. 
+Media Exosome Purification and RNA Isolation Mini 
+After 72 hours, exosomes isolation was performed 
+Kit (cat. no. 60700, Norgen Biotek Corp., Thorold, 
+using Amicon® Ultra-15 Centrifugal Filter Unit with 
+Ontario,  Canada),  following  the  manufacturer’s 
+Ultracel-100 regenerated cellulose membrane (cat. no. 
+instructions.
